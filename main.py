@@ -1,11 +1,19 @@
 import pygame
 import math
 import random
+from pygame_textinput import TextInputVisualizer
+import connect
 
 pygame.init()
 # set game window dimensions
 sw = 800
 sh = 800
+
+def handle_db(username, highScore):
+    mydb = connect.connect_to_database()
+    if mydb:
+        connect.insert_player_score(mydb, username, highScore)
+        connect.close_connection(mydb)
 
 # load the images
 bg = pygame.image.load('asteroidsPics/starbg.png')
@@ -37,6 +45,7 @@ rapidFire = False
 rfStart = -1
 isSoundOn = True
 highScore = 0
+text_input = TextInputVisualizer()
 
 class Player(object):
     def __init__(self):
@@ -209,12 +218,13 @@ class AlienBullet(object):
 
 # to draw bg image on game window
 def redrawGameWindow():
-    win.blit(bg,(0,0))
+    win.blit(bg, (0, 0))
     font = pygame.font.SysFont('arial', 30)
-    livesText = font.render('Lives: '+ str(lives), 1, (255, 255, 255))
+    livesText = font.render('Lives: ' + str(lives), 1, (255, 255, 255))
     playAgainText = font.render('Press Tab to Play Again', 1, (255, 255, 255))
-    scoreText = font.render('Score: '+ str(score),1 ,(255, 255, 255))
-    highScoreText = font.render('High Score: '+ str(highScore),1 ,(255, 255, 255))
+    scoreText = font.render('Score: ' + str(score), 1, (255, 255, 255))
+    highScoreText = font.render('High Score: ' + str(highScore), 1, (255, 255, 255))
+    nameText = font.render('Enter your name: ', 1, (255, 255, 255))
     player.draw(win)
 
     for a in asteroids:
@@ -225,23 +235,29 @@ def redrawGameWindow():
 
     for s in stars:
         s.draw(win)
-    
+
     for a in aliens:
         a.draw(win)
-    
+
     for b in alienBullet:
         b.draw(win)
 
     if rapidFire:
-        pygame.draw.rect(win, (0, 0, 0), [sw//2-51, 19, 102, 22])
-        pygame.draw.rect(win, (255, 255, 255), [sw//2-50, 20, 100 - 100*(count - rfStart)/500, 20])
+        pygame.draw.rect(win, (0, 0, 0), [sw // 2 - 51, 19, 102, 22])
+        pygame.draw.rect(win, (255, 255, 255), [sw // 2 - 50, 20, 100 - 100 * (count - rfStart) / 500, 20])
 
     if gameover:
-        win.blit(playAgainText, (sw//2-playAgainText.get_width()//2, sh//2-playAgainText.get_height()//2))
-    win.blit(scoreText, (sw - scoreText.get_width()-25, 25))
-    win.blit(highScoreText, (sw - highScoreText.get_width()-25, 35 + scoreText.get_height()))
-    win.blit(livesText, (25 ,25))
-    pygame.display.update() #  to make the changes visible on the screen.
+        nameTextRect = nameText.get_rect(topleft=(sw // 2 - 200 + 10, sh // 2 + 20))
+        text_input_rect = pygame.Rect(nameTextRect.topright, (200, 30))
+        pygame.draw.rect(win, (255, 255, 255), text_input_rect)
+        win.blit(nameText, nameTextRect)
+        win.blit(text_input.surface, text_input_rect.topleft) 
+        win.blit(playAgainText, (sw // 2 - playAgainText.get_width() // 2, sh // 2 - playAgainText.get_height() // 2))
+    win.blit(scoreText, (sw - scoreText.get_width() - 25, 25))
+    win.blit(highScoreText, (sw - highScoreText.get_width() - 25, 35 + scoreText.get_height()))
+    win.blit(livesText, (25, 25))
+    pygame.display.update()  # to make the changes visible on the screen.
+#  to make the changes visible on the screen.
 
 player = Player()
 playerBullets = []
@@ -380,10 +396,13 @@ while run:
                 if isSoundOn:
                     shoot.play()
     # iterates over all the events that have occurred since the last time the event queue was checked.
-    for event in pygame.event.get():  # returns a list of all the events that have happened since the last call to pygame.event.get().
+    events = pygame.event.get()                
+    for event in events:  # returns a list of all the events that have happened since the last call to pygame.event.get().
         if event.type == pygame.QUIT:
             run = False
         if event.type == pygame.KEYDOWN:
+            if gameover:
+                text_input.update(events)
             if event.key == pygame.K_SPACE:
                 if not gameover:
                     if not rapidFire:
@@ -395,15 +414,19 @@ while run:
                 isSoundOn = not isSoundOn
             if event.key == pygame.K_TAB:
                 if gameover:
+                    username = text_input.value
+                    if score > highScore:
+                        highScore = score
+                    handle_db(username, highScore)
                     gameover = False
                     lives = 3
                     asteroids.clear()
                     aliens.clear()
                     alienBullet.clear()
                     stars.clear()
-                    if score > highScore:
-                        highScore = score
                     score = 0
+
     
+              
     redrawGameWindow()
 pygame.quit()   # pygame.QUIT event is triggered when the user attempts to close the game window (e.g., by clicking the close button or pressing Alt+F4 on Windows).
