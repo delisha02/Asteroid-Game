@@ -9,11 +9,23 @@ pygame.init()
 sw = 800
 sh = 800
 
-def handle_db(username, highScore):
+def insert_db(username, highScore):
     mydb = connect.connect_to_database()
     if mydb:
-        connect.insert_player_score(mydb, username, highScore)
+        connect.insert_player(mydb, username)
+        
         connect.close_connection(mydb)
+
+def update_db(username, highScore):
+    mydb = connect.connect_to_database()
+    if mydb:
+        new_highScore = connect.update_highScore(mydb, username, highScore)
+        connect.close_connection(mydb)
+        return new_highScore
+    return highScore
+
+
+highScore = 0
 
 # load the images
 bg = pygame.image.load('asteroidsPics/starbg.png')
@@ -44,7 +56,6 @@ score = 0
 rapidFire = False
 rfStart = -1
 isSoundOn = True
-highScore = 0
 text_input = TextInputVisualizer()
 
 class Player(object):
@@ -403,6 +414,12 @@ while run:
         if event.type == pygame.KEYDOWN:
             if gameover:
                 text_input.update(events)
+                if event.key == pygame.K_RETURN:
+                    username = text_input.value
+                    insert_db(username, highScore)
+                    if score > highScore:
+                        highScore = score
+                        highScore = update_db(username, highScore)
             if event.key == pygame.K_SPACE:
                 if not gameover:
                     if not rapidFire:
@@ -414,14 +431,10 @@ while run:
                 isSoundOn = not isSoundOn
             if event.key == pygame.K_TAB:
                 if gameover:
-                    username = text_input.value
-                    if score > highScore:
-                        highScore = score
-                    handle_db(username, highScore)
                     gameover = False
                     lives = 3
                     asteroids.clear()
-                    aliens.clear()
+                    aliens.clear()            
                     alienBullet.clear()
                     stars.clear()
                     score = 0
