@@ -13,7 +13,7 @@ def insert_db(username, highScore):
     mydb = connect.connect_to_database()
     if mydb:
         connect.insert_player(mydb, username)
-        
+                          
         connect.close_connection(mydb)
 
 def update_db(username, highScore):
@@ -306,7 +306,8 @@ while run:
             for b in playerBullets:
                 if (b.x >= a.x and b.x <= a.x + a.w) or b.x + b.w >= a.x and b.x + b.w <= a.x + a.w:
                     if (b.y >= a.y and b.y <= a.y + a.h) or b.y +b.h >= a.y and b.y + b.h <= a.y + a.h:
-                        aliens.pop(i)
+                        if aliens:
+                            aliens.pop(i)
                         if isSoundOn:
                             bangLargeSound.play()
                         score += 50
