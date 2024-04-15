@@ -31,7 +31,7 @@ mydb = connect_to_database()
 read(mydb)
 
 # Function to insert username into the database
-def insert_player(mydb, username):
+def insert_player(mydb, username ,highScore):
     try:
         cursor = mydb.cursor()
         # Check if the user already exists
@@ -40,7 +40,7 @@ def insert_player(mydb, username):
         if existing_user:
             print("User '{}' already exists in the database.".format(username))
         else:
-            cursor.execute("INSERT INTO users (UserName) VALUES (%s)", (username,))
+            cursor.execute("INSERT INTO users (UserName ,highScore) VALUES (%s , %s)", (username ,highScore))
             mydb.commit()
             print("Player '{}' inserted successfully.".format(username))
     except myconn.Error as e:
@@ -50,7 +50,7 @@ def insert_player(mydb, username):
             cursor.close()
 
 # Function to get the high score of a user
-def get_highScore(mydb, username):
+def get_highScore(mydb ,username):
     try:
         cursor = mydb.cursor()
         cursor.execute("SELECT HighScore FROM users WHERE UserName = %s", (username,))
@@ -62,11 +62,26 @@ def get_highScore(mydb, username):
     except myconn.Error as e:
         print("Error fetching high score:", e)
 
+# Function to get the highest score of all the users
+def get_highestScore(mydb):
+    try:
+        cursor = mydb.cursor()
+        cursor.execute("SELECT MAX(HighScore) FROM users")
+        result = cursor.fetchone()
+        if result:
+            return result[0]
+        else:
+            return None
+    except myconn.Error as e:
+        print("Error fetching highest score:", e)
+
+highestScore = get_highestScore(mydb)
+
 # Function to update the high score of a user
 def update_highScore(mydb, username, new_high_score):
     try:
         cursor = mydb.cursor()
-        old_high_score = get_highScore(mydb, username)
+        old_high_score = get_highScore(mydb ,username)
         if old_high_score is None or new_high_score > old_high_score:
             cursor.execute("UPDATE users SET HighScore = %s WHERE UserName = %s", (new_high_score, username))
             mydb.commit()

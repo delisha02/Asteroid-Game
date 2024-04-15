@@ -10,9 +10,9 @@ sw = 800
 sh = 800
 
 def insert_db(username, highScore):
-    mydb = connect.connect_to_database()
+    mydb = connect.connect_to_database()  
     if mydb:
-        connect.insert_player(mydb, username)
+        connect.insert_player(mydb, username, highScore)
                           
         connect.close_connection(mydb)
 
@@ -24,8 +24,8 @@ def update_db(username, highScore):
         return new_highScore
     return highScore
 
-
 highScore = 0
+highestScore = connect.highestScore
 
 # load the images
 bg = pygame.image.load('asteroidsPics/starbg.png')
@@ -234,7 +234,7 @@ def redrawGameWindow():
     livesText = font.render('Lives: ' + str(lives), 1, (255, 255, 255))
     playAgainText = font.render('Press Tab to Play Again', 1, (255, 255, 255))
     scoreText = font.render('Score: ' + str(score), 1, (255, 255, 255))
-    highScoreText = font.render('High Score: ' + str(highScore), 1, (255, 255, 255))
+    highScoreText = font.render('High Score: ' + str(highestScore), 1, (255, 255, 255))
     nameText = font.render('Enter your name: ', 1, (255, 255, 255))
     player.draw(win)
 
@@ -378,14 +378,15 @@ while run:
             s.x += s.xv
             s.y += s.yv
             if s.x < -100 or s.x > sw + 100 or s.y > sh + 100 or s.y < -100 - sh:
-                stars.pop(stars.index(s))
+                stars.pop(stars.index(s))   
                 break
             for b in playerBullets:
                  if (b.x >= s.x and s.x <= s.x + s.w) or b.x + b.w >= s.x and b.x + b.w <= s.x + s.w:
                     if (b.y >= s.y and s.y <= s.y + s.h) or b.y +b.h >= s.y and b.y + b.h <= s.y + s.h:
                         rapidFire = True
                         rfStart = count
-                        stars.pop(stars.index(s))
+                        if stars:
+                            stars.pop(stars.index(s))
                         playerBullets.pop(playerBullets.index(b))
         if lives <= 0:
             gameover = True
